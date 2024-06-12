@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test_input/Screens/register_screen.dart';
 
-// Main
 void main() {
   runApp(const MyApp());
 }
