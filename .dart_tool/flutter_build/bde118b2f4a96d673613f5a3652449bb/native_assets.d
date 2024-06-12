@@ -1,0 +1,1 @@
+ /home/blobby/Desktop/School/IPMEDT4/flutter_test_input/.dart_tool/flutter_build/bde118b2f4a96d673613f5a3652449bb/native_assets.yaml: 
