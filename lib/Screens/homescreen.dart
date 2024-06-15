@@ -1,13 +1,7 @@
-<<<<<<< HEAD
 import 'package:flutter/material.dart';
 import 'package:flutter_test_input/Services/globals.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
-=======
-import 'package:http/http.dart' as http;
-import 'dart:convert';
-import 'package:flutter/material.dart';
->>>>>>> 279b24f (Frontend flutter files uploaded)
 import 'package:flutter_test_input/Services/auth_services.dart';
 
 class HomeScreen extends StatefulWidget {
@@ -18,7 +12,6 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-<<<<<<< HEAD
 
   // Variables used in file
   Map<String, dynamic>? user;
@@ -27,9 +20,6 @@ class _HomeScreenState extends State<HomeScreen> {
   DateTime? _endDate;
   final TextEditingController _taskNameController = TextEditingController();
   final TextEditingController _descriptionController = TextEditingController();
-=======
-  late Map<String, dynamic> user;
->>>>>>> 279b24f (Frontend flutter files uploaded)
 
   @override
   void initState() {
@@ -37,27 +27,20 @@ class _HomeScreenState extends State<HomeScreen> {
     fetchUserDetails();
   }
 
-<<<<<<< HEAD
 
   // Function to retrieve user information
-=======
->>>>>>> 279b24f (Frontend flutter files uploaded)
   fetchUserDetails() async {
     http.Response response = await AuthServices.fetchUserDetails();
     if (response.statusCode == 200) {
       setState(() {
         user = jsonDecode(response.body);
       });
-<<<<<<< HEAD
       fetchUserTasks(user!['id']);
-=======
->>>>>>> 279b24f (Frontend flutter files uploaded)
     } else {
       print("Failed to fetch user details");
     }
   }
 
-<<<<<<< HEAD
 
   // Function to retrieve tasks of the user
   fetchUserTasks(int userId) async {
@@ -298,13 +281,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 
-=======
->>>>>>> 279b24f (Frontend flutter files uploaded)
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-<<<<<<< HEAD
         title: const Text("Home Screen"),
       ),
       // Refresh the page when user swipes down
@@ -387,38 +367,10 @@ class _HomeScreenState extends State<HomeScreen> {
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
 
-=======
-        foregroundColor: Colors.white,
-        backgroundColor: Colors.black,
-        centerTitle: true,
-        elevation: 0,
-        title: const Text(
-          "Home Screen",
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
-      ),
-      body: user != null
-          ? Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text("ID: ${user['id']}"),
-            Text("Name: ${user['name']}"),
-            Text("Email: ${user['email']}"),
-          ],
-        ),
-      )
-          : const Center(child: CircularProgressIndicator()),
->>>>>>> 279b24f (Frontend flutter files uploaded)
     );
   }
 }
 
-<<<<<<< HEAD
 // Extends the functionality of DateTime in order to add isSameDay
 extension DateTimeExtension on DateTime {
   bool isSameDay(DateTime other) {
@@ -426,5 +378,3 @@ extension DateTimeExtension on DateTime {
   }
 }
 
-=======
->>>>>>> 279b24f (Frontend flutter files uploaded)

@@ -3,15 +3,9 @@ import 'dart:convert';
 import 'globals.dart';
 
 class AuthServices {
-<<<<<<< HEAD
   static String? token;
 
   // Function to register a new user
-=======
-  static String? token; // Variable to store the token
-
-  // Register new user
->>>>>>> 279b24f (Frontend flutter files uploaded)
   static Future<http.Response> register(String name, String email, String password) async {
     Map data = {
       "name": name,
@@ -27,18 +21,10 @@ class AuthServices {
       body: body,
     );
 
-<<<<<<< HEAD
     return response;
   }
 
   // Function to log the user in
-=======
-    print(response.body);
-    return response;
-  }
-
-  // Login user
->>>>>>> 279b24f (Frontend flutter files uploaded)
   static Future<http.Response> login(String email, String password) async {
     Map data = {
       "email": email,
@@ -55,7 +41,6 @@ class AuthServices {
 
     if (response.statusCode == 200) {
       var responseData = jsonDecode(response.body);
-<<<<<<< HEAD
       token = responseData['token'];
     }
 
@@ -63,23 +48,12 @@ class AuthServices {
   }
 
   // Function to grab all the user data from backend
-=======
-      token = responseData['token']; // Save the token
-    }
-
-    print(response.body);
-    return response;
-  }
-
-  // Fetch user details
->>>>>>> 279b24f (Frontend flutter files uploaded)
   static Future<http.Response> fetchUserDetails() async {
     var url = Uri.parse("${baseURL}auth/me");
     http.Response response = await http.get(
       url,
       headers: {
         ...headers,
-<<<<<<< HEAD
         "Authorization": "Bearer $token",
       },
     );
@@ -109,16 +83,12 @@ class AuthServices {
       headers: {
         ...headers,
         "Authorization": "Bearer $token",
-=======
-        "Authorization": "Bearer $token", // Add the token to the headers
->>>>>>> 279b24f (Frontend flutter files uploaded)
       },
     );
 
     print(response.body);
     return response;
   }
-<<<<<<< HEAD
 
   // Function to create a new task
   static Future<http.Response> createTask(String taskName, String description, DateTime? startDate, DateTime? endDate, var userId) async {
@@ -148,6 +118,3 @@ class AuthServices {
 
 }
 
-=======
-}
->>>>>>> 279b24f (Frontend flutter files uploaded)
