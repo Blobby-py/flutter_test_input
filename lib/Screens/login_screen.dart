@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_test_input/Screens/register_screen.dart';
 import 'package:flutter_test_input/Services/auth_services.dart';
 import 'package:flutter_test_input/Services/globals.dart';
 import 'package:flutter_test_input/rounded_button.dart';
@@ -37,13 +38,10 @@ class _LoginScreenState extends State<LoginScreen> {
     }
   }
 
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-
-      // Top black bar that says "Login"
-      appBar: AppBar (
+      appBar: AppBar(
         backgroundColor: Colors.black,
         foregroundColor: Colors.white,
         centerTitle: true,
@@ -56,51 +54,47 @@ class _LoginScreenState extends State<LoginScreen> {
           ),
         ),
       ),
-
       body: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 20),
         child: Column(
           children: [
-
-            // Inputfield for Email
             const SizedBox(
               height: 20,
             ),
             TextField(
-              decoration: const InputDecoration(
-                  hintText: "Enter your Email"
-              ),
-              onChanged: (value) {
-                _email = value;
-              }
+                decoration: const InputDecoration(
+                    hintText: "Enter your Email"
+                ),
+                onChanged: (value) {
+                  _email = value;
+                }
             ),
-
-            // Inputfield for Password
             const SizedBox(
               height: 20,
             ),
             TextField(
-              obscureText: true,
-              decoration: const InputDecoration(
-                  hintText: "Enter your Password"
-              ),
-              onChanged: (value) {
-                _password = value;
-              }
+                obscureText: true,
+                decoration: const InputDecoration(
+                    hintText: "Enter your Password"
+                ),
+                onChanged: (value) {
+                  _password = value;
+                }
             ),
-
-            // Login Button
             const SizedBox(
               height: 20,
             ),
             RoundedButton(
-              btnText: "LOGIN",
-              onBtnPressed:() => loginPressed(),
+              btnText: "Login",
+              btnWidth: double.infinity,
+              btnTextStyle: const TextStyle(fontSize: 18),
+              onBtnPressed: () {
+                loginPressed();
+              },
             ),
-
           ],
         ),
-      )
+      ),
     );
   }
 }

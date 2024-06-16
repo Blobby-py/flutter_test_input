@@ -51,6 +51,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       appBar: AppBar(
         backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
         centerTitle: true,
         elevation: 0,
         title: const Text(
@@ -115,8 +116,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
             ),
             RoundedButton(
               btnText: "Create Account",
-              onBtnPressed: () => createAccountPressed(),
+              btnWidth: double.infinity, // Full width button
+              btnTextStyle: const TextStyle(fontSize: 18), // Increased font size
+              onBtnPressed: () {
+                createAccountPressed();
+              },
             ),
+
+
 
             const SizedBox(
               height: 40,

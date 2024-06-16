@@ -17,6 +17,7 @@ class _HomeScreenState extends State<HomeScreen> {
   // Variables used in file
   Map<String, dynamic>? user;
   List<dynamic> tasks = [];
+  int? editingTaskId;
   DateTime? _startDate;
   DateTime? _endDate;
   final TextEditingController _taskNameController = TextEditingController();
@@ -26,6 +27,14 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     fetchUserDetails();
+  }
+
+
+  // Function to set the task ID being edited
+  void setEditingTaskId(int? taskId) {
+    setState(() {
+      editingTaskId = taskId;
+    });
   }
 
 
@@ -82,8 +91,8 @@ class _HomeScreenState extends State<HomeScreen> {
 
 
   // Function to create a new task
-  createTask({required String taskName, String? description, DateTime? startDate, DateTime? endDate, required int userId,}) async {
-
+  createTask(
+      {required String taskName, String? description, DateTime? startDate, DateTime? endDate, required int userId,}) async {
     http.Response response = await AuthServices.createTask(
       taskName,
       description ?? "", // Default to empty string if description is null
@@ -103,13 +112,43 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 
+  // Function to update an existing task
+  updateTask(
+      int taskId,
+      String taskName,
+      String? description,
+      String? startDate,
+      String? endDate,
+      bool finished,
+      int userId) async {
+    bool newFinishedStatus = !finished;
+
+    http.Response response = await AuthServices.updateTask(
+      taskId,
+      taskName,
+      description ?? "",
+      startDate,
+      endDate,
+      newFinishedStatus, // Pass the updated finished status
+      userId,
+    );
+
+    if (response.statusCode == 200) {
+      print("Task updated successfully");
+      await fetchUserTasks(user!['id']); // Reload tasks after successful update
+    } else {
+      print("Failed to update task. Status code: ${response.statusCode}");
+      print("Response body: ${response.body}");
+    }
+  }
+
+
   // Function to create an overlay to add a new task
-  void showCreateTaskOverlay(BuildContext context, {Map<String, dynamic>? initialTask}) {
-    // Initialize text controllers and date variables
-    _taskNameController.text = initialTask != null ? initialTask['name'] ?? '' : '';
-    _descriptionController.text = initialTask != null ? initialTask['description'] ?? '' : '';
-    _startDate = initialTask != null && initialTask['start_date'] != null ? DateTime.parse(initialTask['start_date']) : null;
-    _endDate = initialTask != null && initialTask['end_date'] != null ? DateTime.parse(initialTask['end_date']) : null;
+  void showCreateTaskOverlay(BuildContext context) {
+    _taskNameController.text = '';
+    _descriptionController.text = '';
+    _startDate = null; // Set initial start date to null
+    _endDate = null;
 
     showDialog(
       context: context,
@@ -117,7 +156,7 @@ class _HomeScreenState extends State<HomeScreen> {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setState) {
             return AlertDialog(
-              title: Text(initialTask != null ? "Edit Task" : "Create New Task"),
+              title: Text("Create New Task"),
               content: SizedBox(
                 width: MediaQuery.of(context).size.width * 0.8,
                 height: MediaQuery.of(context).size.height * 0.5,
@@ -161,9 +200,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                           pickedTime.hour,
                                           pickedTime.minute,
                                         );
-                                        // Validate end date
                                         if (_endDate != null && _endDate!.isBefore(_startDate!)) {
-                                          _endDate = _startDate!.add(Duration(days: 1)); // Set end date to 1 day after start date
+                                          _endDate = _startDate!.add(Duration(days: 1));
                                         }
                                       });
                                     }
@@ -184,8 +222,8 @@ class _HomeScreenState extends State<HomeScreen> {
                                 onPressed: () async {
                                   DateTime? pickedDate = await showDatePicker(
                                     context: context,
-                                    initialDate: _endDate ?? (_startDate ?? DateTime.now()), // Default to start date or current date
-                                    firstDate: _startDate?.subtract(Duration(minutes: 15)) ?? DateTime.now().subtract(Duration(minutes: 15)), // Minimum end date is 15 minutes before start date or now - 15 minutes if start date not set
+                                    initialDate: _endDate ?? (_startDate ?? DateTime.now()),
+                                    firstDate: _startDate?.subtract(Duration(minutes: 15)) ?? DateTime.now().subtract(Duration(minutes: 15)),
                                     lastDate: DateTime(2101),
                                   );
                                   if (pickedDate != null) {
@@ -202,17 +240,13 @@ class _HomeScreenState extends State<HomeScreen> {
                                           pickedTime.hour,
                                           pickedTime.minute,
                                         );
-
-                                        // Adjust end time to be at least 15 minutes after start time if they are on the same day
                                         if (_startDate!.isSameDay(_endDate!)) {
                                           if (_endDate!.isBefore(_startDate!.add(Duration(minutes: 15)))) {
                                             _endDate = _startDate!.add(Duration(minutes: 15));
                                           }
                                         }
-
-                                        // Validate end date
                                         if (_endDate!.isBefore(_startDate!)) {
-                                          _endDate = _startDate!.add(Duration(days: 1)); // Set end date to 1 day after start date
+                                          _endDate = _startDate!.add(Duration(days: 1));
                                         }
                                       });
                                     }
@@ -237,7 +271,6 @@ class _HomeScreenState extends State<HomeScreen> {
                     Navigator.of(context).pop();
                   },
                 ),
-
                 TextButton(
                   style: TextButton.styleFrom(
                     backgroundColor: const Color.fromRGBO(3, 200, 98, 100),
@@ -250,28 +283,20 @@ class _HomeScreenState extends State<HomeScreen> {
                       ScaffoldMessenger.of(context).showSnackBar(errorSnackBar(context, "Please enter a task name"));
                       return;
                     }
-
                     if (_endDate != null && _endDate!.isBefore(_startDate!)) {
                       ScaffoldMessenger.of(context).showSnackBar(errorSnackBar(context, "End date must be after start date"));
                       return;
                     }
-
-                    if (initialTask != null) {
-                      // Handle update task logic
-                      print("EDIT TASK");
-                    } else {
-                      // Handle create task logic
-                      await createTask(
-                        taskName: taskName,
-                        description: description.isEmpty ? null : description,
-                        startDate: _startDate,
-                        endDate: _endDate,
-                        userId: user!['id'],
-                      );
-                    }
-                    Navigator.of(context).pop(); // Close the dialog after task creation/editing
+                    await createTask(
+                      taskName: taskName,
+                      description: description.isEmpty ? null : description,
+                      startDate: _startDate,
+                      endDate: _endDate,
+                      userId: user!['id'],
+                    );
+                    Navigator.of(context).pop();
                   },
-                  child: Text(initialTask != null ? "Update" : "Create"),
+                  child: const Text("Create"),
                 ),
               ],
             );
@@ -282,15 +307,244 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
 
+  // Function to create an overlay to edit an existing task
+  void showEditTaskOverlay(BuildContext context, Map<String, dynamic> initialTask) {
+    // Local controllers for this edit task overlay
+    final TextEditingController taskNameController =
+    TextEditingController(text: initialTask['name'] ?? '');
+    final TextEditingController descriptionController =
+    TextEditingController(text: initialTask['description'] ?? '');
+    DateTime? startDate = initialTask['start_date'] != null
+        ? DateTime.parse(initialTask['start_date'])
+        : null;
+    DateTime? endDate = initialTask['end_date'] != null
+        ? DateTime.parse(initialTask['end_date'])
+        : null;
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setState) {
+            return AlertDialog(
+              title: Text("Edit Task"),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TextField(
+                      controller: taskNameController,
+                      autofocus: true, // Autofocus on the task name field
+                      decoration: const InputDecoration(labelText: "Task Name"),
+                    ),
+                    const SizedBox(height: 20),
+                    TextField(
+                      controller: descriptionController,
+                      decoration: const InputDecoration(labelText: "Description"),
+                    ),
+                    const SizedBox(height: 20),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Column(
+                            children: [
+                              TextButton(
+                                onPressed: () async {
+                                  DateTime? pickedDate = await showDatePicker(
+                                    context: context,
+                                    initialDate: startDate ?? DateTime.now(),
+                                    firstDate: DateTime.now(),
+                                    lastDate: endDate ?? DateTime(2101),
+                                  );
+                                  if (pickedDate != null) {
+                                    TimeOfDay? pickedTime = await showTimePicker(
+                                      context: context,
+                                      initialTime: TimeOfDay.now(),
+                                    );
+                                    if (pickedTime != null) {
+                                      setState(() {
+                                        startDate = DateTime(
+                                          pickedDate.year,
+                                          pickedDate.month,
+                                          pickedDate.day,
+                                          pickedTime.hour,
+                                          pickedTime.minute,
+                                        );
+                                        // Automatically adjust end date if it's before start date
+                                        if (endDate != null &&
+                                            endDate!.isBefore(startDate!)) {
+                                          endDate =
+                                              startDate!.add(Duration(days: 1));
+                                        }
+                                      });
+                                    }
+                                  }
+                                },
+                                child: Text(startDate == null
+                                    ? 'Select Start Date'
+                                    : '${startDate!.year}-${startDate!.month.toString().padLeft(2, '0')}-${startDate!.day.toString().padLeft(2, '0')} ${startDate!.hour.toString().padLeft(2, '0')}:${startDate!.minute.toString().padLeft(2, '0')}'),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 20),
+                        Expanded(
+                          child: Column(
+                            children: [
+                              TextButton(
+                                onPressed: () async {
+                                  DateTime? pickedDate = await showDatePicker(
+                                    context: context,
+                                    initialDate: endDate ?? (startDate ?? DateTime.now()),
+                                    firstDate: startDate?.subtract(Duration(minutes: 15)) ?? DateTime.now().subtract(Duration(minutes: 15)),
+                                    lastDate: DateTime(2101),
+                                  );
+                                  if (pickedDate != null) {
+                                    TimeOfDay? pickedTime = await showTimePicker(
+                                      context: context,
+                                      initialTime: TimeOfDay.now(),
+                                    );
+                                    if (pickedTime != null) {
+                                      setState(() {
+                                        endDate = DateTime(
+                                          pickedDate.year,
+                                          pickedDate.month,
+                                          pickedDate.day,
+                                          pickedTime.hour,
+                                          pickedTime.minute,
+                                        );
+                                        // Adjust start date if end date is before start date
+                                        if (startDate != null &&
+                                            endDate!.isBefore(startDate!)) {
+                                          startDate =
+                                              endDate!.subtract(Duration(days: 1));
+                                        }
+                                      });
+                                    }
+                                  }
+                                },
+                                child: Text(endDate == null
+                                    ? 'Select End Date'
+                                    : '${endDate!.year}-${endDate!.month.toString().padLeft(2, '0')}-${endDate!.day.toString().padLeft(2, '0')} ${endDate!.hour.toString().padLeft(2, '0')}:${endDate!.minute.toString().padLeft(2, '0')}'),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              actions: <Widget>[
+                TextButton(
+                  child: const Text("Cancel"),
+                  onPressed: () {
+                    Navigator.of(context).pop();
+                    setEditingTaskId(null); // Reset editingTaskId on cancel
+                  },
+                ),
+                TextButton(
+                  style: TextButton.styleFrom(
+                    backgroundColor: const Color.fromRGBO(3, 200, 98, 100),
+                    foregroundColor: const Color.fromRGBO(0, 0, 0, 100),
+                  ),
+                  onPressed: () async {
+                    String taskName = taskNameController.text.trim();
+                    String description = descriptionController.text.trim();
+                    if (taskName.isEmpty) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          errorSnackBar(context, "Please enter a task name"));
+                      return;
+                    }
+                    if (endDate != null && endDate!.isBefore(startDate!)) {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                          errorSnackBar(context, "End date must be after start date"));
+                      return;
+                    }
+                    // Delete the existing task
+                    await deleteTask(initialTask['task_id']);
+                    // Create a new task with updated details
+                    await createTask(
+                      taskName: taskName,
+                      description: description.isEmpty ? null : description,
+                      startDate: startDate,
+                      endDate: endDate,
+                      userId: user!['id'],
+                    );
+                    Navigator.of(context).pop();
+                    setEditingTaskId(null); // Reset editingTaskId after update
+                  },
+                  child: const Text("Update"),
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
+
+
+  // Function to show overview and score
+  void showTrophyOverlay(BuildContext context) {
+    // Sample data for demonstration purposes
+    int totalPlanned = tasks.length;
+    int totalCompleted = tasks.where((task) => task['finished'] == 1).length;
+    int score = totalCompleted * 10; // Example scoring logic
+
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text('Overview'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Total Planned: $totalPlanned'),
+              Text('Total Completed: $totalCompleted'),
+              Text('Score: $score'),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Close'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+
+
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
+        backgroundColor: Colors.black,
+        foregroundColor: Colors.white,
         title: const Text("Home Screen"),
+        actions: [
+          Container(
+            margin: const EdgeInsets.only(right: 20.0),
+            child: IconButton(
+              icon: const Icon(Icons.emoji_events),
+              onPressed: () {
+                showTrophyOverlay(context);
+              },
+            ),
+          ),
+        ],
       ),
-      // Refresh the page when user swipes down
       body: RefreshIndicator(
-        onRefresh: () => fetchUserTasks(user!["id"]), // Reload tasks when refreshing
+        onRefresh: () => fetchUserTasks(user!["id"]),
         child: user != null
             ? Padding(
           padding: const EdgeInsets.all(20.0),
@@ -302,74 +556,105 @@ class _HomeScreenState extends State<HomeScreen> {
                   itemCount: tasks.length,
                   itemBuilder: (context, index) {
                     bool isFinished = tasks[index]['finished'] == 1;
-                    return ListTile(
-                      title: Text(tasks[index]['name']),  // Task name displayed as title
-                      subtitle: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(tasks[index]['description'] ?? ""), // Description (handle null with ??)
-                          Text(tasks[index]["start_date"] ?? ""), // Start Date (handle null with ??)
-                          Text(tasks[index]["end_date"] ?? ""), // End Date (handle null with ??)
-                        ],
+
+                    return Card(
+                      margin: const EdgeInsets.symmetric(vertical: 10.0),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10.0),
                       ),
-                      trailing: Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          // Icon green or red based on if the task has been completed or not
-                          Icon(
-                            isFinished ? Icons.check_circle : Icons.circle,
-                            color: isFinished ? Colors.green : Colors.red,
+                      elevation: 10.0,
+                      child: Padding(
+                        padding: const EdgeInsets.all(10.0),
+                        child: ListTile(
+                          title: Text(tasks[index]['name']),
+                          subtitle: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(tasks[index]['description'] ?? ""),
+                              Text(tasks[index]["start_date"] ?? ""),
+                              Text(tasks[index]["end_date"] ?? ""),
+                            ],
                           ),
-                          // Trashcan icon to delete a task
-                          IconButton(
-                            icon: const Icon(Icons.delete, color: Colors.red),
-                            onPressed: () {
-                              deleteTask(tasks[index]['task_id']);
-                            },
+                          trailing: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+
+                              // Give the correct string to update
+                              GestureDetector(
+                                onTap: () {
+                                  bool isFinished = tasks[index]['finished'] == 1;
+                                  int taskId = tasks[index]["task_id"];
+
+                                  // Handle potential null values for start_date and end_date
+                                  String? startDateString = tasks[index]["start_date"];
+                                  String? endDateString = tasks[index]["end_date"];
+
+                                  String? newStartDate;
+                                  String? newEndDate;
+
+                                  if (startDateString != null) {
+                                    DateTime startDate = DateTime.parse(startDateString);
+                                    newStartDate = "${startDate.year.toString()}-${startDate.month.toString().padLeft(2, '0')}-${startDate.day.toString().padLeft(2, '0')} ${startDate.hour.toString().padLeft(2, '0')}-${startDate.minute.toString().padLeft(2, '0')}";
+                                  }
+
+                                  if (endDateString != null) {
+                                    DateTime endDate = DateTime.parse(endDateString);
+                                    newEndDate = "${endDate.year.toString()}-${endDate.month.toString().padLeft(2, '0')}-${endDate.day.toString().padLeft(2, '0')} ${endDate.hour.toString().padLeft(2, '0')}-${endDate.minute.toString().padLeft(2, '0')}";
+                                  }
+
+                                  updateTask(
+                                    taskId,
+                                    tasks[index]['name'],
+                                    tasks[index]['description'],
+                                    newStartDate,
+                                    newEndDate,
+                                    isFinished,
+                                    user!['id'],
+                                  ); // Toggle the task status
+                                },
+                                child: Icon(
+                                  isFinished ? Icons.check_circle : Icons.circle,
+                                  color: isFinished ? Colors.green : Colors.red,
+                                ),
+                              ),
+
+                              IconButton(
+                                icon: const Icon(Icons.delete, color: Colors.red),
+                                onPressed: () {
+                                  deleteTask(tasks[index]['task_id']);
+                                },
+                              ),
+                              IconButton(
+                                icon: const Icon(Icons.edit, color: Colors.blue),
+                                onPressed: () {
+                                  if (tasks[index]['finished'] != 1) {
+                                    showEditTaskOverlay(context, tasks[index]);
+                                  }
+                                },
+                              ),
+                            ],
                           ),
-                          // Edit button to edit a task
-                          IconButton(
-                            icon: const Icon(Icons.edit, color: Colors.blue),
-                            onPressed: () {
-                              showCreateTaskOverlay(context, initialTask: tasks[index]);
-                            },
-                          ),
-                        ],
+                        ),
                       ),
                     );
                   },
                 ),
-
               ),
             ],
           ),
         )
             : const Center(child: CircularProgressIndicator()),
       ),
-
-      // Add a new task icon
-      floatingActionButton: GestureDetector(
-          onTap: () => showCreateTaskOverlay(context),
-          child: Container(
-            width: 65,  // Width of add task button
-            height: 65,  // Height of add task button
-            decoration: BoxDecoration (
-              shape: BoxShape.circle,
-              color: Colors.black.withOpacity(0.657),
-            ),
-
-            // Plus icon in center of cirlce
-            child: const Icon(
-              Icons.add,
-              color: Colors.white,
-              size: 36,
-            ),
-          ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () {
+          showCreateTaskOverlay(context);
+        },
+        child: const Icon(Icons.add),
       ),
-      floatingActionButtonLocation: FloatingActionButtonLocation.startFloat,
-
+      floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
+
 }
 
 // Extends the functionality of DateTime in order to add isSameDay
@@ -378,4 +663,3 @@ extension DateTimeExtension on DateTime {
     return this.year == other.year && this.month == other.month && this.day == other.day;
   }
 }
-
